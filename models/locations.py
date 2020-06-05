@@ -1,11 +1,14 @@
 from database.db import db
 from models.users import UsersModel
+from geopy.distance import lonlat, distance
 
 
-class PassesModel(db.Model):
+class LocationsModel(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    display_name = db.Column(db.String(80), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey(UsersModel.id), unique=True)
+    longitude = db.Column(db.Float, nullable=False)
+    latitude = db.Column(db.Float, nullable=False)
+ 
 
     def __init__(self, longitude, latitude, user_id):
         self.longitude = longitude
@@ -46,3 +49,7 @@ class PassesModel(db.Model):
                 # id converted to string and has key of 'key' for react native List
                 users_close_to_client.append({'key' : str(accepted_user.id), 'username' : accepted_user.username,'distance': distance_between})
         return users_close_to_client
+
+            
+
+

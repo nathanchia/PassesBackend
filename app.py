@@ -2,6 +2,7 @@ from flask import Flask, jsonify, request
 from flask_jwt_extended import (JWTManager, jwt_required, create_access_token, get_jwt_identity)
 from database.db import db
 from models.users import UsersModel
+from models.locations import LocationsModel
 import hashlib
 
 
@@ -45,6 +46,9 @@ def create():
         new_user = UsersModel(username, hashlib.sha256(password.encode("utf-8")).hexdigest())
         new_user.save_to_db()
 
+        new_location = LocationsModel(0.0, 0.0, new_user)
+        new_location.save_to_db()
+
         return jsonify(msg='Successfully created new user'), 200
     else:
         return jsonify(msg='Wrong request methods')
@@ -79,15 +83,18 @@ def signin():
 @app.route('/ping', methods=['POST'])
 @jwt_required
 def ping():
-    if request.method == 'POST':
-        current_user = get_jwt_identity()
-        content = request.json
-        print ('longitude: ' + str(content['longitude']) + ', latitude: ' + str(content['latitude']))
-        msg = 'It was a success, ' + UsersModel.query.get(current_user).username
-        return jsonify(msg=msg)
-    else:
-        return jsonify(msg='Wrong request methods')
+    identity = get_jwt_identity()
+    content = request.json
+    client = LocationsModel.find_user_by_userid(identity)
+    client.update_location(content['longitude'], content['latitude'])
+    users_close_to_client = LocationsModel.get_other_locations_within(identity)
+    return jsonify(msg = users_close_to_client), 200
 
+
+@app.route('/passdisplay', methods=['GET'])
+@jwt_required
+def passdisplay():
+    pass
 
 if __name__ == '__main__':
     @app.before_first_request
