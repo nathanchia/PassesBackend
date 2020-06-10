@@ -6,6 +6,7 @@ class UsersModel(db.Model):
     username = db.Column(db.String(80), nullable=False)
     password = db.Column(db.String(), nullable=False)
     location = db.relationship('LocationsModel', backref='user', uselist=False)
+    passInfo = db.relationship('PassesModel', backref='user', uselist=False)
 
 
     def __init__(self, username, password):
