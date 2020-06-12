@@ -1,3 +1,4 @@
+from flask import jsonify
 from database.db import db
 from models.users import UsersModel
 from models.passes import PassesModel
@@ -26,31 +27,30 @@ class LocationsModel(db.Model):
         db.session.delete(self)
         db.session.commit()
 
-
-    def update_location(self, new_lon, new_lat):
-        self.longitude = new_lon
-        self.latitude = new_lat
+        
+    @classmethod
+    def ping(cls, new_lon, new_lat, user_id):
+        client_location = cls.query.filter_by(user_id=user_id).first()
+        client_location.longitude = new_lon
+        client_location.latitude = new_lat
         db.session.commit()
         
-        
-    def get_other_locations(self):
+        current_location = (new_lon, new_lat)
         users_close_to_client = []
-        
-        client_location = (self.longitude, self.latitude)
-        remaining_users = LocationsModel.query.all()
+
+        remaining_users = cls.query.all()
         for user in remaining_users:
-            if user.user_id != self.user_id:
+            if user.user_id != user_id:
                 user_location = (user.longitude, user.latitude)
-                distance_between = distance(lonlat(*client_location), lonlat(*user_location)).miles
+                distance_between = distance(lonlat(*current_location), lonlat(*user_location)).miles
                 if distance_between < 2:
-                    accepted_user = UsersModel.find_user_by_id(user.user_id)
                     # id converted to string and has key of 'key' for react native List
                     users_close_to_client.append({
-                        'key' : str(accepted_user.id), 
-                        'username' : PassesModel.find_display_name_by_user_id(accepted_user.id), 
+                        'key' : str(user.user_id), 
+                        'username' : PassesModel.find_display_name_by_user_id(user.user_id), 
                         'distance': distance_between
                     })
-        return users_close_to_client
+        return jsonify(success=True, passes=users_close_to_client), 200
             
 
 

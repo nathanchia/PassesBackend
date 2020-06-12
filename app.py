@@ -35,10 +35,10 @@ def create():
     new_location = LocationsModel(new_user, 0.0, 0.0)
     new_location.save_to_db()
 
-    new_pass = PassesModel(new_user, display_name)
+    new_pass = PassesModel(new_user, display_name, '[]')
     new_pass.save_to_db()
 
-    return jsonify(msg='Successfully created new user'), 200
+    return jsonify(success=True), 200
     
 
 @app.route('/signin', methods=['POST'])
@@ -50,8 +50,7 @@ def signin():
     user_exists = UsersModel.find_user_by_username(username)
     if user_exists and user_exists.password == hashlib.sha256(password.encode("utf-8")).hexdigest():
         access_token = create_access_token(identity=user_exists.id)
-        display_name = PassesModel.find_display_name_by_user_id(user_exists.id)
-        return jsonify(token=access_token, displayName=display_name), 200
+        return jsonify(success=True, token=access_token), 200
     else: 
         return jsonify(msg='Invalid credentials'), 401
     
@@ -61,16 +60,26 @@ def signin():
 def ping():
     identity = get_jwt_identity()
     content = request.json
-    client_location = LocationsModel.query.filter_by(user_id=identity).first()
-    client_location.update_location(content['longitude'], content['latitude'])
-    users_close_to_client = client_location.get_other_locations()
-    return jsonify(msg = users_close_to_client), 200
+    return LocationsModel.ping(content['longitude'], content['latitude'], identity)
 
 
-@app.route('/passdisplay', methods=['GET'])
+@app.route('/getpass', methods=['GET'])
 @jwt_required
-def passdisplay():
-    pass
+def getpass():
+    user_id = request.args.get('userid')
+    if user_id == 'self':
+        identity = get_jwt_identity()
+        return PassesModel.get_json_pass_by_user_id(identity)
+
+
+@app.route('/changename', methods=['POST'])
+@jwt_required
+def changename():
+    identity = get_jwt_identity()
+    content = request.json
+    new_name = content['newName']
+    PassesModel.update_display_name(identity, new_name)
+    return jsonify(success=True), 200
 
 
 if __name__ == '__main__':
