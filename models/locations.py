@@ -42,12 +42,12 @@ class LocationsModel(db.Model):
         for user in remaining_users:
             if user.user_id != user_id:
                 user_location = (user.longitude, user.latitude)
-                distance_between = distance(lonlat(*current_location), lonlat(*user_location)).miles
-                if distance_between < 2:
+                distance_between = round(distance(lonlat(*current_location), lonlat(*user_location)).meters, 1)
+                if distance_between < 2000:
                     # id converted to string and has key of 'key' for react native List
                     users_close_to_client.append({
                         'key' : str(user.user_id), 
-                        'username' : PassesModel.find_display_name_by_user_id(user.user_id), 
+                        'username' : PassesModel.get_display_name_by_user_id(user.user_id), 
                         'distance': distance_between
                     })
         return jsonify(success=True, passes=users_close_to_client), 200

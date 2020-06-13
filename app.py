@@ -35,7 +35,8 @@ def create():
     new_location = LocationsModel(new_user, 0.0, 0.0)
     new_location.save_to_db()
 
-    new_pass = PassesModel(new_user, display_name, '[]')
+    premade = '[{"key":"InitialGreeting","title":"Greetings","text":"Hi, this is ' + display_name +'"}]'
+    new_pass = PassesModel(new_user, display_name, premade)
     new_pass.save_to_db()
 
     return jsonify(success=True), 200
@@ -50,7 +51,9 @@ def signin():
     user_exists = UsersModel.find_user_by_username(username)
     if user_exists and user_exists.password == hashlib.sha256(password.encode("utf-8")).hexdigest():
         access_token = create_access_token(identity=user_exists.id)
-        return jsonify(success=True, token=access_token), 200
+        entries = PassesModel.get_string_pass_by_user_id(user_exists.id)
+        display_name = PassesModel.get_display_name_by_user_id(user_exists.id)
+        return jsonify(success=True, token=access_token, entries=entries, displayName=display_name), 200
     else: 
         return jsonify(msg='Invalid credentials'), 401
     
@@ -69,7 +72,11 @@ def getpass():
     user_id = request.args.get('userid')
     if user_id == 'self':
         identity = get_jwt_identity()
-        return PassesModel.get_json_pass_by_user_id(identity)
+        entries = PassesModel.get_string_pass_by_user_id(identity)
+        return jsonify(success=True, entries=entries), 200
+    else:
+        entries = PassesModel.get_string_pass_by_user_id(int(user_id))
+        return jsonify(success=True, entries=entries), 200
 
 
 @app.route('/changename', methods=['POST'])
@@ -82,11 +89,18 @@ def changename():
     return jsonify(success=True), 200
 
 
-if __name__ == '__main__':
-    @app.before_first_request
-    def create_tables():
-        db.create_all()
+@app.route('/updateentries', methods=['POST'])
+@jwt_required
+def updateentries():
+    identity = get_jwt_identity()
+    content = request.json
+    new_entries = content['newEntries']
+    PassesModel.update_entries(identity, new_entries)
+    return jsonify(success=True), 200
 
+
+if __name__ == '__main__':
+    db.create_all()
     app.run()
 
 

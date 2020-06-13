@@ -1,4 +1,3 @@
-from flask import jsonify
 from database.db import db
 from models.users import UsersModel
 
@@ -24,15 +23,17 @@ class PassesModel(db.Model):
         db.session.delete(self)
         db.session.commit()
     
+
     @classmethod
-    def find_display_name_by_user_id(cls, user_id):
+    def get_display_name_by_user_id(cls, user_id):
         target_pass = cls.query.filter_by(user_id=user_id).first()
         return target_pass.display_name
 
-    @classmethod 
-    def get_json_pass_by_user_id(cls, user_id):
+    @classmethod
+    def get_string_pass_by_user_id(cls,user_id):
         target_pass = cls.query.filter_by(user_id=user_id).first()
-        return jsonify(success=True, displayName=target_pass.display_name, entries=target_pass.entries), 200
+        return target_pass.entries
+
 
     @classmethod
     def update_display_name(cls, user_id, new_name):
@@ -40,6 +41,12 @@ class PassesModel(db.Model):
         target_pass.display_name = new_name
         db.session.commit()
 
+
+    @classmethod
+    def update_entries(cls, user_id, new_entries):
+        target_pass = cls.query.filter_by(user_id=user_id).first()
+        target_pass.entries = new_entries
+        db.session.commit()
 
         
 
