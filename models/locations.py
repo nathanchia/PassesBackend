@@ -1,4 +1,3 @@
-from flask import jsonify
 from database.db import db
 from models.users import UsersModel
 from models.passes import PassesModel
@@ -29,7 +28,7 @@ class LocationsModel(db.Model):
 
         
     @classmethod
-    def ping(cls, new_lon, new_lat, user_id):
+    def ping(cls, max_distance, new_lon, new_lat, user_id):
         client_location = cls.query.filter_by(user_id=user_id).first()
         client_location.longitude = new_lon
         client_location.latitude = new_lat
@@ -37,20 +36,61 @@ class LocationsModel(db.Model):
         
         current_location = (new_lon, new_lat)
         users_close_to_client = []
-
+        max_valid = 15 # Arbitrary number
+        
         remaining_users = cls.query.all()
         for user in remaining_users:
+            # Make sure user is not returned himself
             if user.user_id != user_id:
+                # Get distance
                 user_location = (user.longitude, user.latitude)
-                distance_between = round(distance(lonlat(*current_location), lonlat(*user_location)).meters, 1)
-                if distance_between < 2000:
-                    # id converted to string and has key of 'key' for react native List
-                    users_close_to_client.append({
-                        'key' : str(user.user_id), 
-                        'username' : PassesModel.get_display_name_by_user_id(user.user_id), 
-                        'distance': distance_between
-                    })
-        return jsonify(success=True, passes=users_close_to_client), 200
+                distance_between = round(distance(lonlat(*current_location), lonlat(*user_location)).miles, 1)
+                if max_distance == 'none' or distance_between <= int(max_distance):
+                    # Just append since not max yet
+                    if max_valid > 0:
+                        max_valid -= 1
+                        
+                        # Populate empty list
+                        if len(users_close_to_client) == 0:
+                            users_close_to_client.append({
+                                'key' : str(user.user_id), 
+                                'displayName' : PassesModel.get_display_name_by_user_id(user.user_id), 
+                                'distance': distance_between
+                            })
+                        
+                        # Find the correct index to insert pass otherwise
+                        else:
+                            for i in range(len(users_close_to_client)):
+                                if users_close_to_client[i]['distance'] > distance_between:
+                                    users_close_to_client.insert(i, {
+                                        'key' : str(user.user_id), 
+                                        'displayName' : PassesModel.get_display_name_by_user_id(user.user_id), 
+                                        'distance': distance_between
+                                    })
+                                    break
+                                # Since will add this entry either way, if largest distance, append to end
+                                if i == len(users_close_to_client) - 1:
+                                    users_close_to_client.append({
+                                        'key' : str(user.user_id), 
+                                        'displayName' : PassesModel.get_display_name_by_user_id(user.user_id), 
+                                        'distance': distance_between
+                                    })
+                    else:
+                        # Max number of passes allowed
+                        # Checks through all the entries in the list. If find a suitable slot,
+                        # insert, and delete last (largest distance) entry
+                        for i in range(len(users_close_to_client)):
+                            if users_close_to_client[i]['distance'] > distance_between:
+                                users_close_to_client.insert(i, {
+                                    'key' : str(user.user_id), 
+                                    'displayName' : PassesModel.get_display_name_by_user_id(user.user_id), 
+                                    'distance': distance_between
+                                })
+                                del users_close_to_client[-1]
+                                break
+
+        return users_close_to_client
+        
             
 
 

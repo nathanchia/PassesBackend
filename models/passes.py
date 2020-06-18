@@ -8,6 +8,7 @@ class PassesModel(db.Model):
     display_name = db.Column(db.String(80), nullable=False)
     entries = db.Column(db.Text, nullable=False)
 
+
     def __init__(self, user_id, display_name, entries):
         self.user = user_id
         self.display_name = display_name
@@ -28,6 +29,7 @@ class PassesModel(db.Model):
     def get_display_name_by_user_id(cls, user_id):
         target_pass = cls.query.filter_by(user_id=user_id).first()
         return target_pass.display_name
+
 
     @classmethod
     def get_string_pass_by_user_id(cls,user_id):

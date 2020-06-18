@@ -16,6 +16,9 @@ db.init_app(app)
 
 jwt = JWTManager(app)
 
+with app.app_context():
+    db.create_all()
+
 
 @app.route('/create',  methods=['POST'])
 def create():
@@ -29,7 +32,7 @@ def create():
     password = content['password']
     display_name = content['displayName']
 
-    new_user = UsersModel(username, hashlib.sha256(password.encode("utf-8")).hexdigest())
+    new_user = UsersModel(username, hashlib.sha256(password.encode("utf-8")).hexdigest(), '[]')
     new_user.save_to_db()
 
     new_location = LocationsModel(new_user, 0.0, 0.0)
@@ -51,9 +54,10 @@ def signin():
     user_exists = UsersModel.find_user_by_username(username)
     if user_exists and user_exists.password == hashlib.sha256(password.encode("utf-8")).hexdigest():
         access_token = create_access_token(identity=user_exists.id)
-        entries = PassesModel.get_string_pass_by_user_id(user_exists.id)
         display_name = PassesModel.get_display_name_by_user_id(user_exists.id)
-        return jsonify(success=True, token=access_token, entries=entries, displayName=display_name), 200
+        entries = PassesModel.get_string_pass_by_user_id(user_exists.id)
+        favorites = user_exists.favorites
+        return jsonify(success=True, token=access_token, displayName=display_name, entries=entries, favorites=favorites), 200
     else: 
         return jsonify(msg='Invalid credentials'), 401
     
@@ -63,20 +67,19 @@ def signin():
 def ping():
     identity = get_jwt_identity()
     content = request.json
-    return LocationsModel.ping(content['longitude'], content['latitude'], identity)
+    users_close_to_client = LocationsModel.ping(content['maxDistance'], content['longitude'], content['latitude'], identity)
+    return jsonify(success=True, passes=users_close_to_client), 200
 
 
 @app.route('/getpass', methods=['GET'])
 @jwt_required
 def getpass():
     user_id = request.args.get('userid')
-    if user_id == 'self':
-        identity = get_jwt_identity()
-        entries = PassesModel.get_string_pass_by_user_id(identity)
-        return jsonify(success=True, entries=entries), 200
-    else:
-        entries = PassesModel.get_string_pass_by_user_id(int(user_id))
-        return jsonify(success=True, entries=entries), 200
+    identity = get_jwt_identity()
+    target_id = int(user_id)
+    entries = PassesModel.get_string_pass_by_user_id(target_id)
+    is_fav = UsersModel.is_fav(identity, target_id)
+    return jsonify(success=True, entries=entries, isFav=is_fav), 200
 
 
 @app.route('/changename', methods=['POST'])
@@ -96,6 +99,16 @@ def updateentries():
     content = request.json
     new_entries = content['newEntries']
     PassesModel.update_entries(identity, new_entries)
+    return jsonify(success=True), 200
+
+
+@app.route('/updatefav', methods=['POST'])
+@jwt_required
+def updatefav():
+    identity = get_jwt_identity()
+    content = request.json
+    new_favorites = content['newFav']
+    UsersModel.update_favorites(identity, new_favorites)
     return jsonify(success=True), 200
 
 
