@@ -3,17 +3,19 @@ import json
 
 class UsersModel(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), nullable=False)
+    username = db.Column(db.String(), nullable=False)
     password = db.Column(db.String(), nullable=False)
+    email = db.Column(db.String(), nullable=False)
     location = db.relationship('LocationsModel', backref='user', uselist=False)
     passInfo = db.relationship('PassesModel', backref='user', uselist=False)
     favorites = db.Column(db.Text, nullable=False)
     
 
-    def __init__(self, username, password, favorites):
+    def __init__(self, username, password, email):
         self.username = username
         self.password = password
-        self.favorites = favorites
+        self.email = email
+        self.favorites = '[]'
   
   
     def save_to_db(self):
@@ -34,6 +36,11 @@ class UsersModel(db.Model):
     @classmethod
     def find_user_by_id(cls, _id):
         return cls.query.filter_by(id=_id).first()
+
+    
+    @classmethod
+    def find_user_by_email(cls, email):
+        return cls.query.filter_by(email=email).first()
 
 
     @classmethod

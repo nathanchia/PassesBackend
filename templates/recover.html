@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link
+      rel="icon"
+      href="{{ url_for('static', filename='images/LogoSmall.png') }}"
+    />
+    <title>CloCards Password Reset</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/recover.css') }}"
+    />
+    <script src="{{ url_for('static', filename='js/recover.js') }}"></script>
+  </head>
+
+  <body>
+    <div class="container">
+      <h1>New Password</h1>
+      <input type="password" id="newPass" />
+      <button type="button">Submit</button>
+    </div>
+  </body>
+</html>

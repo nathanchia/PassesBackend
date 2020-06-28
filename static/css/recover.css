@@ -1,0 +1,23 @@
+@font-face {
+  font-family: "RobotoSlab";
+  src: url("../Fonts/RobotoSlab-Regular.eot");
+  src: url("../Fonts/RobotoSlab-Regular.woff2") format("woff2"),
+    url("../Fonts/RobotoSlab-Regular.woff"),
+    url("../Fonts/RobotoSlab-Regular.ttf") format("truetype");
+}
+
+.container,
+input,
+button {
+  font-family: "RobotoSlab";
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+input {
+  margin-bottom: 10px;
+}
